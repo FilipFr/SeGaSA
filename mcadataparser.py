@@ -1,5 +1,14 @@
+"""
+Data parser for Amptek PX5 MCA output files.
+
+So far the module consist of a single class, parsing is performed by calling a proper
+method on an instance and providing either a file or a directory path as their parameter.
+
+To extract data, the target directory/filepath must contain the extension ".mca".
+A precaution has been taken to avoid duplicite data by ignoring the "v.mca" substring
+"""
+
 import os.path
-# import matplotlib.pyplot as plt
 from os import walk
 
 
