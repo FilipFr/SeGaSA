@@ -4,4 +4,4 @@
 
 ##### Author: Filip Frank
 
-This repository contains the implementation part of my bachelor thesis.
+##### Supervisor: Katarina Sedlačková
