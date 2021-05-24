@@ -1,7 +1,4 @@
-#### Bachelor Thesis
 
-##### Title: Software design for automation of the spectra processing for a semiconductor detector with polarization effect
 
-##### Author: Filip Frank
-
-##### Supervisor: Katarina Sedlačková
+##### <span style="color:blue">THE REPOSITORY IS CURRENTLY OUTDATED</span>
+Public version 1.0a will be released in June 2021
