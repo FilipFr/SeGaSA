@@ -1,0 +1,187 @@
+controller.event_controller module (SeGaSA ver. 1.0a)
+
+DESCRIPTION:
+************
+
+This module represents the Controller component of the SeGaSA application.
+
+CLASSES:
+
+    EventController : subclass of AppWindow
+        -- manages event handling
+
+CLASSES
+*******
+
+class EventController(AppWindow)
+
+    A controller class for event handling.
+
+    Inherits QtWidgets from AppWindow.
+    Updates the View and the Model component of the system.
+
+    ATTRIBUTES:
+
+        data : SessionData
+            -- represents the Model component
+            -- contains data of the currently running session of the application
+        fig : Matplotlib Figure
+            -- initial plot figure
+        ax : Matplotlib Axis
+            -- initial plot axis
+
+    METHODS:
+
+        load_data() : void
+
+            Loads a folder containing .mca files and calls create_sequence() and draw_plot().
+
+            TRIGGERED BY:
+                -- button_load_data click
+
+        create_sequence() : void
+        
+  	    Creates/updates sequence and peak data based on loaded data and slider_subset_size value.
+
+            PRECONDITIONS:
+                -- .mca files were successfully loaded
+
+            TRIGGERED BY:
+                -- load_data was successful
+                -- slider_subset_size change
+
+        linear_calibration() : void
+
+            Performs linear calibration using curve_fit and displays calibration results.
+
+            Saves calibration parameters in the SessionData instance.
+            Displays calibration equation, r-squared and the calibration plot.
+
+            PRECONDITIONS:
+
+                -- mca. files were successfully loaded
+                -- slider_subset_position is set to 1
+                -- at least 2 peaks were selected in the displayed spectrum
+
+            TRIGGERED BY:
+
+                -- button_calibrate click
+        
+        draw_plot() : void
+
+            Displays the selected spectrum of the sequence in a Matplotlib plot.
+
+            PRECONDITIONS:
+
+                -- mca. files were successfully loaded into a sequence
+
+            TRIGGERED BY:
+                -- load_data was successful
+                -- slider_subset_size change
+                -- slider_subset_position change
+        
+        get_channel() : void
+
+            Handles peak selection in the spectrum plot.
+
+            Also updates the main window by displaying the centroid of the selected peak and enabling other events.
+
+            PRECONDITIONS:
+
+                -- mca. files were successfully loaded into a sequence
+                -- the spectrum plot is displayed
+                -- slider_subset_position is set to 1
+
+            TRIGGERED BY:
+
+                -- click in plot near a found peak
+        
+        offset_slider_update() : void
+
+            Displays the corresponding spectrum of the sequence.
+
+            Resets the sequence by calling create_sequence().
+
+            PRECONDITIONS:
+
+                -- .mca files were successfully loaded into a sequence
+
+            TRIGGERED BY:
+
+                -- slider_subset_position change
+        
+        size_slider_update() : void
+
+            Specifies number of summed .mca spectra and modifies the sequence by calling create_sequence.
+
+            Also displays the the newly created spectrum in position 1 of the sequence.
+            Resets the sequence and selected peaks by calling create_sequence().
+
+            PRECONDITIONS:
+
+                -- .mca files were successfully loaded into a sequence
+
+            TRIGGERED BY:
+
+                -- slider_subset_size change
+       
+        set_peak_boundaries() : void
+            
+	    Enables the selection of peak boundaries using Matplotlib RectangleSelector.
+
+            Displays a selection plot for each spectrum of the sequence in a loot
+            of length len(self.data.sequence.spectra).
+            Selection is performed by using a mouse.
+            Selection has to be confirmed by pressing some key, recommended "q".
+
+            PRECONDITIONS:
+
+                -- .mca files were successfully loaded into a sequence
+                -- Peak of interest was selected by get_channel
+
+            TRIGGERED BY:
+
+                -- button_set_boundaries click
+
+            COMPLETED BY:
+
+                -- selecting all the boundaries.
+
+            !!! THIS EVENT IS CURRENTLY SUSCEPTIBLE TO UNDEFINED BEHAVIOR IF DONE IMPROPERLY !!!
+   
+        get_results() : void
+
+            Displays time dependency plot of evaluated spectrometric parameters and prepares the results for export.
+
+            Performing the calibration and boundary selection beforehand provides more results.
+            Executing get_results disables all interaction with the main window except for loading and exporting.
+
+            PRECONDITIONS:
+
+                -- .mca files were successfully loaded into a sequence
+                -- the Peak of interest (first selected peak) must be selected by get_channel
+                -- OPTIONAL -- if calibration is performed, centroids and fwhms can be calculated in keV
+                -- OPTIONAL -- if boundaries are selected, results_alt is calculated for heights and fwhms and both
+		               result lists are created for the peak areas
+
+            TRIGGERED BY:
+
+                -- button_show_results click
+        
+        export_results() : void
+
+            Saves result in a .txt file.
+
+            Parameters that were not evaluated are set to 0 for all spectra of the sequence.
+
+            PRECONDITIONS:
+
+                -- get_results was executed
+
+            TRIGGERED BY:
+
+                -- button_export_results click
+      
+        retranslate() : void
+            -- updates the main window
+    
