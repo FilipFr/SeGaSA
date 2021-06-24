@@ -278,7 +278,8 @@ class PeakArea(Result)
     A subclass of Results representing peak areas.
 
     METHODS:
-        calculate_areas(starts, ends, sequence) !!! REQUIRES PEAK BOUNDARIES TO BE SET
+        calculate_areas(starts, ends, sequence)
+	
             Sums the counts between boundaries with and without background subtraction.
 
             !!! REQUIRES PEAK BOUNDARIES TO BE SET
