@@ -13,8 +13,53 @@ from PyQt5 import QtCore, QtWidgets
 
 sys.path.append("..")  # Adds higher directory to python modules path.
 
+"""This module represents the Controller component of the SeGaSA application.
+
+CLASSES:
+    EventController : subclass of AppWindow
+        -- manages event handling
+"""
+
 
 class EventController(AppWindow):
+    """A controller class for event handling.
+
+    A subclass of AppWindow.
+    Updates the View and the Model component of the system.
+
+    ATTRIBUTES:
+        data : SessionData
+            -- represents the Model component
+            -- contains data of the currently running session of the application
+        fig : Matplotlib Figure
+            -- initial plot figure
+        ax : Matplotlib Axis
+            -- initial plot axis
+
+    METHODS:
+        load_data() : void
+            -- loads a folder containing .mca files and calls create_sequence() and draw_plot()
+        create_sequence() : void
+            -- creates/updates sequence and peak data based on loaded data and slider_subset_size value
+        linear_calibration() : void
+            -- performs linear calibration using curve_fit and displays calibration results
+        draw_plot() : void
+            -- displays the selected spectrum of the sequence using the initial plot
+        get_channel() : void
+            -- handles peak selection on the initial plot
+        offset_slider_update() : void
+            -- responds to slider_subset_position change by displaying a proper plot
+        size_slider_update() : void
+            -- responds to slider_subset_size change by modifying the current sequence and displaying a proper plot
+        set_peak_boundaries() : void
+            -- enables the selection of peak boundaries using Matplotlib RectangleSelector on plot
+        get_results() : void
+            -- displays time dependency plot of evaluated spectrometric parameters and prepares the results for export
+        export_results() : void
+            -- saves the results as a .txt file
+        retranslate() : void
+            -- updates the main window
+    """
 
     def __init__(self):
         super(EventController, self).__init__()
@@ -25,7 +70,11 @@ class EventController(AppWindow):
         self.fig, self.ax = plt.subplots()
 
     def load_data(self):
+        """Loads a folder containing .mca files and calls create_sequence() and draw_plot().
 
+        TRIGGERED BY:
+            -- button_load_data click
+        """
 
         dirpath = QtWidgets.QFileDialog.getExistingDirectory(None, 'Select project folder:', "F:\\",
                                                              QtWidgets.QFileDialog.ShowDirsOnly)
@@ -77,6 +126,15 @@ class EventController(AppWindow):
                     plt.ylabel('counts')
 
     def create_sequence(self):
+        """Creates/updates sequence and peak data based on loaded data and slider_subset_size value.
+
+        PRECONDITIONS:
+            -- .mca files were successfully loaded
+
+        TRIGGERED BY:
+            -- load_data was successful
+            -- slider_subset_size change
+        """
         self.data.sequence.spectra = []
         for value in self.spinboxes:
             value.setValue(0)
@@ -103,6 +161,20 @@ class EventController(AppWindow):
         print(self.data.peaks.found)
 
     def linear_calibration(self):
+        """Performs linear calibration using curve_fit and displays calibration results.
+
+        Saves calibration parameters in the SessionData instance.
+        Displays calibration equation, r-squared and the calibration plot.
+
+        PRECONDITIONS:
+            -- mca. files were successfully loaded
+            -- slider_subset_position is set to 1
+            -- at least 2 peaks were selected in the displayed spectrum
+
+        TRIGGERED BY:
+            -- button_calibrate click
+        """
+
         if self.spinbox_peak_1.value() and self.spinbox_peak_2.value():
             x_list = []
             for value in self.data.peaks.selected:
@@ -147,7 +219,16 @@ class EventController(AppWindow):
             self.data.calibration.offset = b
 
     def draw_plot(self):
+        """Displays the selected spectrum of the sequence in a Matplotlib plot.
 
+        PRECONDITIONS:
+            -- mca. files were successfully loaded into a sequence
+
+        TRIGGERED BY:
+            -- load_data was successful
+            -- slider_subset_size change
+            -- slider_subset_position change
+        """
         plt.figure(1)
         manager = plt.get_current_fig_manager()
         manager.set_window_title("MCA spectrum")
@@ -170,6 +251,18 @@ class EventController(AppWindow):
         plt.show()
 
     def get_channel(self, event):
+        """Handles peak selection in the spectrum plot.
+
+        Also updates the main window by displaying the centroid of the selected peak and enabling other events.
+
+        PRECONDITIONS:
+            -- mca. files were successfully loaded into a sequence
+            -- the spectrum plot is displayed
+            -- slider_subset_position is set to 1
+
+        TRIGGERED BY:
+            -- click in plot near a found peak
+        """
         if self.data.sequence.current_position != 1:
             msg = QtWidgets.QMessageBox()
             msg.setIcon(QtWidgets.QMessageBox.Warning)
@@ -230,6 +323,16 @@ class EventController(AppWindow):
             self.retranslate()
 
     def position_slider_update(self):
+        """Displays the corresponding spectrum of the sequence.
+
+        Resets the sequence by calling create_sequence().
+
+        PRECONDITIONS:
+            -- .mca files were successfully loaded into a sequence
+
+        TRIGGERED BY:
+            -- slider_subset_position change
+        """
         self.data.sequence.current_position = self.slider_subset_position.value()
         self.create_sequence()
         self.draw_plot()
@@ -240,6 +343,17 @@ class EventController(AppWindow):
         self.retranslate()
 
     def size_slider_update(self):
+        """Specifies number of summed .mca spectra and modifies the sequence by calling create_sequence.
+
+        Also displays the the newly created spectrum in position 1 of the sequence.
+        Resets the sequence and selected peaks by calling create_sequence().
+
+        PRECONDITIONS:
+            -- .mca files were successfully loaded into a sequence
+
+        TRIGGERED BY:
+            -- slider_subset_size change
+        """
         self.data.reset()
         self.data.sequence.subset_size = self.slider_subset_size.value()
         self.data.sequence.current_position = 1
@@ -257,20 +371,35 @@ class EventController(AppWindow):
 
 
     def set_peak_boundaries(self):
-        """Event function triggered by the button_set_boundaries of the UI.
+        """Enables the selection of peak boundaries using Matplotlib RectangleSelector.
 
-        Allows the user to pick all spectra
+        Displays a selection plot for each spectrum of the sequence in a loot
+        of length len(self.data.sequence.spectra).
+        Selection is performed by using a mouse.
+        Selection has to be confirmed by pressing some key, recommended "q".
+
+        PRECONDITIONS:
+            -- .mca files were successfully loaded into a sequence
+            -- Peak of interest was selected by get_channel
+
+        TRIGGERED BY:
+            -- button_set_boundaries click
+
+        COMPLETED BY:
+            -- selecting all the boundaries.
+
+        !!! THIS EVENT IS CURRENTLY SUSCEPTIBLE TO UNDEFINED BEHAVIOR IF DONE IMPROPERLY !!!
         """
         self.data.peaks.boundaries = []
 
         tempBoundaries = []
         for i in range(len(self.data.sequence.spectra)):
-            def line_select_callback(eclick, erelease):
+            def line_select_callback(eclick, erelease):  # saves selected values
                 x1, y1 = eclick.xdata, eclick.ydata
                 x2, y2 = erelease.xdata, erelease.ydata
                 self.tempBoundaries = [x1, x2]
 
-            def toggle_selector(event):
+            def toggle_selector(event):  # selection event
 
                 if event.key and toggle_selector.RS.active:
 
@@ -286,12 +415,18 @@ class EventController(AppWindow):
                     self.data.peaks.found[1]] + 200 * self.data.peaks.prominence])
             plt.draw()  # draw the plot
             toggle_selector.RS = RectangleSelector(current_ax, line_select_callback,
-                                                   drawtype='box', useblit=True,
+                                                   drawtype='box', useblit=False,
                                                    button=[1, 3],  # don't use middle button
                                                    minspanx=5, minspany=5,
                                                    spancoords='pixels',
                                                    interactive=True)
             plt.connect('key_press_event', toggle_selector)
+
+            if 0 < i < len(self.data.sequence.spectra):
+                toggle_selector.RS.to_draw.set_visible(True)
+                fig.canvas.draw()
+                toggle_selector.RS.extents = (self.data.peaks.boundaries[i-1][0], self.data.peaks.boundaries[i-1][1],
+                                              0, self.data.sequence.spectra[i][self.data.sequence.peaks[i]])
             while not plt.waitforbuttonpress():
                 continue
             if not self.data.peaks.boundaries[i][0] < self.data.sequence.peaks[i] < self.data.peaks.boundaries[i][1]:
@@ -310,6 +445,21 @@ class EventController(AppWindow):
         print(self.data.peaks.boundaries)
 
     def get_results(self):
+        """Displays time dependency plot of evaluated spectrometric parameters and prepares the results for export.
+
+        Performing the calibration and boundary selection beforehand provides more results.
+        Executing get_results disables all interaction with the main window except for loading and exporting.
+
+        PRECONDITIONS:
+            -- .mca files were successfully loaded into a sequence
+            -- the Peak of interest (first selected peak) must be selected by get_channel
+            -- OPTIONAL -- if calibration is performed, centroids and fwhms can be calculated in keV
+            -- OPTIONAL -- if boundaries are selected, results_alt is calculated for heights and fwhms and both result
+            lists are created for the peak areas
+
+        TRIGGERED BY:
+            -- button_show_results click
+        """
         print(self.data.peaks.boundaries)
         self.data.fwhms = FWHM()
         self.data.centroids = PeakCentroid()
@@ -483,28 +633,64 @@ class EventController(AppWindow):
                                         + self.data.loaded_data.time*self.data.sequence.subset_size))
             export_preparation_3.append(i)
 
+        fwhm2_kev = []
+        fwhm1_kev = []
+        centroids_kev = []
+        centroids_alt_kev = []
+        calibration_flag = 0
         if self.data.calibration.tangent > 1 or self.data.calibration.offset != 0:
+            calibration_flag = 1
             self.data.export.unit = "[keV]"
             if areas_alt.any() and fwhm2.any() and heights_alt.any():
-                fwhm2 = fwhm2 * self.data.calibration.tangent
-            fwhm1 = fwhm1 * self.data.calibration.tangent
-            centroids = centroids * self.data.calibration.tangent + self.data.calibration.offset
-            centroids_alt = centroids_alt * self.data.calibration.tangent + self.data.calibration.offset
+                fwhm2_kev = fwhm2 * self.data.calibration.tangent
+            fwhm1_kev = fwhm1 * self.data.calibration.tangent
+            centroids_kev = centroids * self.data.calibration.tangent + self.data.calibration.offset
+            centroids_alt_kev = centroids_alt * self.data.calibration.tangent + self.data.calibration.offset
         else:
             self.data.export.unit = "[channel]"
 
-        if areas_alt.any() and fwhm2.any() and heights_alt.any():
+        fwhm2_percentages = []
+        for i in range(0, len(fwhm2)):
+            fwhm2_percentages.append(fwhm2[i]*100/(self.data.peaks.boundaries[i][1] - self.data.peaks.boundaries[i][0]))
+
+        if areas_alt.any() and fwhm2.any() and heights_alt.any() and calibration_flag == 1:
             export = [export_preparation_3,
                       export_preparation_2,
-                      centroids, centroids_alt,
-                      fwhm1, fwhm2,
+                      centroids, centroids_kev,
+                      centroids_alt, centroids_alt_kev,
+                      fwhm1, fwhm1_kev,
+                      fwhm2, fwhm2_kev,
+                      fwhm2_percentages,
                       heights, heights_alt,
                       areas, areas_alt]
+        elif areas_alt.any() and fwhm2.any() and heights_alt.any() and calibration_flag == 0:
+            export = [export_preparation_3,
+                      export_preparation_2,
+                      centroids, export_preparation_1,
+                      centroids_alt, export_preparation_1,
+                      fwhm1, export_preparation_1,
+                      fwhm2, export_preparation_1,
+                      fwhm2_percentages,
+                      heights, heights_alt,
+                      areas, areas_alt]
+        elif calibration_flag == 1:
+            export = [export_preparation_3,
+                      export_preparation_2,
+                      centroids, centroids_kev,
+                      centroids_alt, centroids_alt_kev,
+                      fwhm1, fwhm1_kev,
+                      export_preparation_1, export_preparation_1,
+                      export_preparation_1,
+                      heights, export_preparation_1,
+                      export_preparation_1, export_preparation_1]
         else:
             export = [export_preparation_3,
                       export_preparation_2,
-                      centroids, centroids_alt,
+                      centroids, export_preparation_1,
+                      centroids_alt, export_preparation_1,
                       fwhm1, export_preparation_1,
+                      export_preparation_1, export_preparation_1,
+                      export_preparation_1,
                       heights, export_preparation_1,
                       export_preparation_1, export_preparation_1]
         print(export)
@@ -518,27 +704,63 @@ class EventController(AppWindow):
         self.button_export_results.setEnabled(True)
 
     def export_results(self):
+        """Saves result in a .txt file.
+
+        Parameters that were not evaluated are set to 0 for all spectra of the sequence.
+
+        PRECONDITIONS:
+            -- get_results was executed
+
+        TRIGGERED BY:
+            -- button_export_results click
+        """
         header = f"Number of loaded files: {self.data.loaded_data.file_count}\n" \
                  + f"Calibration plot equation: {self.data.calibration.tangent}x " \
-                   f"+ {self.data.calibration.offset}z\n" \
+                   f"+ {self.data.calibration.offset}\n" \
                  + f"Number of files summed in one spectrum: {self.data.sequence.subset_size}\n\n"
 
         table_head = "Columns should be interpreted as follows:\n" \
                      + "1. Position in sequence\n" \
                      + "2. Time of acquisition [seconds]\n" \
-                     + f"3. Centroid - Five-channel method {self.data.export.unit}\n"\
-                     + f"4. Centroid - Gaussian fit {self.data.export.unit}\n" \
-                     + f"5. FWHM - analytic interpolation with background {self.data.export.unit}\n"\
-                     + f"6. FWHM - analytic interpolation without background {self.data.export.unit}\n" \
-                     + "7. Peak height with background [counts]\n" \
-                     + "8. Peak height without background [counts]\n" \
-                     + "9. Gross area [counts]\n" \
-                     + "10. Net area [counts]\n" \
+                     + f"3. Centroid - Five-channel method [channel]\n" \
+                     + f"4. Centroid - Five-channel method [kiloelectron volts]\n" \
+                     + f"5. Centroid - Gaussian fit [channel]\n" \
+                     + f"6. Centroid - Gaussian fit [kiloelectron volts]\n" \
+                     + f"7. FWHM - analytic interpolation with background [channel]\n" \
+                     + f"8. FWHM - analytic interpolation with background [kiloelectron volts]\n" \
+                     + f"9. FWHM - analytic interpolation without background [channel]\n" \
+                     + f"10. FWHM - analytic interpolation without background [kiloelectron volts]\n" \
+                     + f"11. FWHM - analytic interpolation without background [percentage of peak width]\n" \
+                     + "12. Peak height with background [counts]\n" \
+                     + f"13. Peak height without background [counts]\n" \
+                     + "14. Gross area [counts]\n" \
+                     + f"15. Net area [counts]\n" \
                      + "\n"
-        export_string = ""
+        export_string = "Position" + 2*" " \
+                        + "Time [s]" + 2*" " \
+                        + "Cen-5ch [ch]" + 3*" " \
+                        + "Cen-5ch [keV]" + 2*" " \
+                        + "Cen-G [ch]" + 5*" " \
+                        + "Cen-G [keV]" + 4*" " \
+                        + "FWHM+b [ch]" + 4*" " \
+                        + "FWHM+b [keV]" + 3*" " \
+                        + "FWHM-b [ch]" + 4*" " \
+                        + "FWHM-b [keV]" + 3*" " \
+                        + "FWHM [%]" + 7*" " \
+                        + "PH+b [counts]" + 2*" " \
+                        + "PH-b [counts]" + 2*" " \
+                        + "GA [counts]" + 4*" " \
+                        + "NA [counts]" + 4*" " + "\n"
         for i in range(len(self.data.sequence.spectra)):
+            counter = 0
             for j in self.data.export.data:
-                export_string += str(j[i]) + "\t"
+                counter += 1
+                if counter > 2:
+                    export_string += f"{float(j[i]):.5f}"
+                    if len(f"{j[i]:.5f}") < 15:
+                        export_string += (15-len(f"{j[i]:.5f}"))*" "
+                else:
+                    export_string += str(j[i]) + (10-len(str(j[i])))*" "
             export_string += "\n"
         name = QtWidgets.QFileDialog.getSaveFileName(None, 'Save File')
         file = open(name[0]+".txt", 'w')

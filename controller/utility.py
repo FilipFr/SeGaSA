@@ -1,8 +1,20 @@
 # from scipy.optimize import curve_fit
 # from scipy.integrate import quad
-"""Module for helper functions of the system SeGaSA.
+"""This module contains helper functions.
 
-    Also contains function prototypes.
+    FUNCTIONS:
+        linear_model(x, a, b) : returns float
+            -- represents the linear function used as an argument in SciPy curve_fit
+        gaussian_model(x, a, mu, sig) : returns float
+            -- represents the gaussian function used as an argument in SciPy curve_fit
+        estimate_centroid(data, max_channel) : returns float
+            -- evaluates peak position using five-channel method.
+        estimate_fwhm(data, max_channel, k) : returns float
+            -- evaluates fwhm using analytic interpolation method
+        r_squared_linear(x, y, a, b) : returns float
+            -- calculates the coefficient of determination
+        get_max_channel(measurement_data, peak) : returns integer
+            -- finds a corresponding peak in the following spectrum of the analyzed sequence
 """
 import numpy as np
 
@@ -26,19 +38,36 @@ import numpy as np
 
 
 def linear_model(x, a, b):
+    """A model representing the linear function used as an argument in SciPy curve_fit.
+
+    PARAMETERS:
+        x : float
+        a : float
+            -- tangent
+        b : float
+            -- offset
+    RETURNS:
+        float
+            -- the value of a linear function with given parameters
+    """
     return a * x + b
 
 
 def gaussian_model(x, a, mu, sig):
-    """A funciton used to calculate gaussian parameters
+    """A model representing the gaussian function used as an argument in SciPy curve_fit.
 
-    PARAMETERS
+    PARAMETERS:
+        x : float
         a : float
-            -- gaussian height
+            -- height of the bell curve
         mu : float
-            -- mean (centroid in our case)
+            -- mean value (middle) of the bell curve
         sig : float
-            --
+            -- standard deviation (correlates to width) of the bell curve
+
+    RETURNS:
+        float
+            -- the value of a gaussian function with given parameters
     """
     return a * np.exp(-(x - mu) ** 2 / (2 * sig ** 2))
 
@@ -48,11 +77,17 @@ def gaussian_model(x, a, mu, sig):
 #     return base + height * np.exp(-0.5 * ((x - center) / width1) ** 2)
 
 def estimate_centroid(data, max_channel):
-    """Determines peak position by the five-channel method
+    """Evaluates peak position by the five-channel method.
 
     PARAMETERS:
         data : list of integers
-        max_channel: index of the channel containing maximum amount of counts
+            -- analyzed spectrum
+        max_channel: integer
+            -- index of the channel containing maximum amount of counts
+
+    RETURNS:
+        float
+            -- represents the peak position [channel]
     """
     max_count = data[max_channel]
     sub1 = data[max_channel - 1]
@@ -80,6 +115,21 @@ def estimate_centroid(data, max_channel):
 #     return height
 
 def estimate_fwhm(data, max_channel, k):
+    """Evaluates fwhm using analytic interpolation method.
+
+    PARAMETERS:
+        data : list of integers
+            -- analyzed spectrum
+        max_channel: integer
+            -- index of the channel containing maximum amount of counts
+        k : float
+            -- a value between 0 and 1 determining the relative height of the peak at which the width
+            is evaluated (0.5 without background subtraction, less than 0.5 with background subtracted)
+
+    RETURNS
+        float
+            -- evaluated fwhm
+    """
     height = data[max_channel]
     sub1 = 0
     sub1_index = 0
@@ -154,6 +204,22 @@ def estimate_fwhm(data, max_channel, k):
 
 
 def r_squared_linear(x, y, a, b):
+    """Evaluates the r-squared (coefficient of determination).
+
+    PARAMETERS:
+        x : list of floats
+            -- an ordered set of centroids used for calibration
+        y : list of floats
+            -- an ordered set of energies used for calibration
+        a : float
+            -- tangent of the calibration function
+        b : float
+            -- offset of the calibration function
+
+    RETURNS
+         float
+            -- r_squared, coefficient of determination
+    """
     x = np.array(x)
     y = np.array(y)
     residuals = (y - (linear_model(x, a, b)))
@@ -164,6 +230,18 @@ def r_squared_linear(x, y, a, b):
 
 
 def get_max_channel(measurement_data, peak):
+    """Finds a corresponding peak in the following spectrum of the analyzed sequence
+
+    PARAMETERS:
+        measurement_data : list of integers
+            -- data of the spectrum in which we attempt to find the peak
+        peak : integer
+            -- index of the channel containing peak maximum
+
+    RETURNS:
+        integer
+            -- index of the found peak, -1 if peak wasn't found
+    """
     int_peak = int(peak)
     index = -1
     data = np.array(measurement_data)

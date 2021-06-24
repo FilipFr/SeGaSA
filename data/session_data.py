@@ -5,6 +5,36 @@ import sys
 import numpy as np
 sys.path.append("..")  # Adds higher directory to python modules path.
 
+"""The main Model component module of the SeGaSA system.
+
+Contains data classes.
+
+CLASSES:
+
+    SessionData
+        -- data on the current state of the application session.
+    Peak
+        -- data on peaks found and selected in the currently analyzed sequence
+    Calibration
+        -- calibration data
+    Sequence
+        -- data on the currently analyzed sequence
+    MCAData
+        -- data parsed from loaded files
+    Result 
+        -- stores results of the spectra evaluation
+    PeakCentroid
+        -- peak centroid evaluation result data
+    FWHM
+        -- fwhm evaluation result data
+    PeakHeight
+        -- peak height evaluation result data
+    PeakArea
+        -- peak area evaluation result data
+    Export
+        -- result data intended to be exported 
+"""
+
 
 class SessionData:
     """A class storing the current state of the application.
@@ -12,12 +42,13 @@ class SessionData:
     Contains instances of data classes.
     This class represents the Model component of the SeGaSA system.
     Instances are maintained for the duration of a single application session.
-    Check docstrings of respective data classes for specification.
+    Check docstrings of respective data classes for their specification.
 
     ATTRIBUTES:
+
         loaded_data : MCAData()
         sequence : Sequence()
-        peaks : Peak ()
+        peaks : Peak()
         calibration : Calibration()
         fwhms : FWHMs()
         centroids : PeakCentroids()
@@ -25,8 +56,9 @@ class SessionData:
         areas : PeakAreas()
 
     METHODS:
+
         reset() : void
-            -- resets application to it's uninitialized state
+            -- resets the application to a partially uninitialized state.
     """
 
     def __init__(self):
@@ -41,9 +73,9 @@ class SessionData:
         self.export = Export()
 
     def reset(self):
-        """Returns application to it's uninitialized state.
+        """Returns application to a partially uninitialized state.
 
-        Loaded data remains unaffected"""
+        Loaded data remains unaffected."""
         self.sequence = Sequence()
         self.peaks = Peak()
         self.calibration = Calibration()
@@ -55,7 +87,7 @@ class SessionData:
 
 
 class Peak:
-    """A class storing the data of peaks found and selected in the currently analyzed spectrum
+    """A class storing the data of peaks found and selected in the currently analyzed sequence.
 
     ATTRIBUTES:
         found : list of integers
@@ -64,7 +96,16 @@ class Peak:
             -- peaks selected by the user
         prominence : integer
             -- current level of prominence, identical to the spectrum size (possible redundancy?)
+        boundaries : list of lists of floats
+            -- currently selected peak boundaries
+        starts : list of integers
+            -- starting channels of the currently selected peak for the whole sequence
+        ends : list of integers
+            -- ending channels of the currently selected peak for the whole sequence
 
+    METHODS:
+        boundaries_to_int() : void
+            -- converts the list of floats representing peak boundaries into two lists of integers
     """
 
     def __init__(self):
@@ -76,6 +117,7 @@ class Peak:
         self.ends = []
 
     def boundaries_to_int(self):
+        """Converts the tuple of floats representing peak boundaries into two lists of integers."""
         self.starts = []
         self.ends = []
         for boundary in self.boundaries:
@@ -85,6 +127,14 @@ class Peak:
 
 
 class Calibration:
+    """Contains calibration data.
+
+    ATTRIBUTES:
+        tangent : float
+        offset : float
+        r_squared : float (on the interval [0-1])
+            -- coefficient of determination
+    """
 
     def __init__(self):
         self.tangent = 1
@@ -93,6 +143,22 @@ class Calibration:
 
 
 class Sequence:
+    """Contains data of the currently analyzed sequence.
+
+    ATTRIBUTES:
+        subset_size : integer
+            -- number of summed .mca files in one spectrum of the sequence
+        current_position : integer
+            -- index of the currently displayed spectrum of the sequence (indexing from 1)
+        spectra : list of lists of integers
+            -- all spectra of the sequence
+        length : integer
+            -- number of spectra in the analyzed sequence
+        peaks : list of integers
+            -- list of channel numbers of the analyzed peak maximum
+        spectrum : list of integers
+            -- currently selected spectrum
+    """
 
     def __init__(self):
         self.subset_size = 0
@@ -119,6 +185,7 @@ class MCAData:
         get_data_from_directory(directory_path)
             -- calls parse_data_from_mca on each file in the directory
     """
+
     def __init__(self):
         self._file_count = 0
         self._spectra = []
@@ -137,10 +204,12 @@ class MCAData:
         return self._time
 
     def parse_data_from_mca(self, filepath):
-        """Parses data from a single .mca file
+        """Parses data from a single .mca file.
 
-
+        PARAMETERS:
+            filepath : string
         """
+
         initial_string = "<<DATA>>"
         terminal_string = "<<END>>"
         time_marker = "LIVE_TIME"
@@ -171,6 +240,15 @@ class MCAData:
             print("ok")
 
     def get_data_from_directory(self, directory_path):
+        """Calls parse_data_from_mca on each file in the directory.
+
+        PARAMETERS:
+            directory_path : string
+
+        RETURNS:
+            integer (0 on success, -1 on failiure)
+        """
+
         files = []
         self._file_count = 0
         self._spectra = []
@@ -185,10 +263,11 @@ class MCAData:
             self._time = int(float(self._time))
         if not self._spectra:
             return -1
+        return 0
 
 
 class Result:
-    """A data class representing spectra evaluation results
+    """A data class representing spectra evaluation results.
 
     This class is intended to be subclassed by classes of specific spectrometric parameters.
 
@@ -197,6 +276,10 @@ class Result:
             -- contains evaluation of a specific spectrometric parameter for all loaded spectra
         _results_alt : list of integers / list of floats
             -- contains alternative evaluation of a specific parameter for all loaded spectra
+
+    METHODS:
+        create_ndarrays() : ndarray, ndarray (see NumPy type ndarray)
+            -- returns NumPy arrays made from results
     """
 
     def __init__(self):
@@ -204,6 +287,11 @@ class Result:
         self._results_alt = []
 
     def create_ndarrays(self):
+        """Returns NumPy arrays made from results.
+
+        RETURNS:
+            ndarray, ndarray
+        """
         return np.array(self._results), np.array(self._results_alt)
 
 
@@ -220,11 +308,31 @@ class PeakCentroid(Result):
         super().__init__()
 
     def calculate_centroids(self, sequence, peaks):
+        """Uses five-channel method to evaluate current spectra and produces a list of centroids.
+
+        The operation is done on all spectra of the sequence, each result is appended to the respective result list.
+
+        PARAMETERS:
+            sequence : list of lists of integers
+                -- all analyzed spectra
+            peaks : list of integers
+                -- list of channel numbers of the analyzed peak maximum
+        """
         for i in range(0, len(sequence)):
             self._results.append(utility.estimate_centroid(sequence[i], peaks[i]))
         print(self._results)
 
     def calculate_centroids_alt(self, sequence, peaks):
+        """Uses gaussian fitting on top of the peak of interest to produce a list of centroids.
+
+        The operation is done on all spectra of the sequence, each result is appended to the respective result list.
+
+        PARAMETERS:
+            sequence : list of lists of integers
+                -- all analyzed spectra
+            peaks : list of integers
+                -- list of channel numbers of the analyzed peak maximum
+        """
         for i in range(0, len(sequence)):
             x = []
             y = []
@@ -253,6 +361,16 @@ class FWHM(Result):
         super().__init__()
 
     def calculate_fwhms(self, sequence, peaks):
+        """Uses analytic interpolation without background subtraction to produce a list of fwhms.
+
+        The operation is done on all spectra of the sequence, each result is appended to the respective result list.
+
+        PARAMETERS:
+            sequence : list of lists of integers
+                -- all analyzed spectra
+            peaks : list of integers
+                -- list of channel numbers of the analyzed peak maximum
+        """
         for i in range(0, len(sequence)):
             x = []
             y = []
@@ -267,6 +385,21 @@ class FWHM(Result):
         print(self._results)
 
     def calculate_fwhms_alt(self, starts, ends, sequence, peaks):
+        """Uses analytic interpolation with background subtraction to produce a list of fwhms.
+
+        !!! REQUIRES PEAK BOUNDARIES TO BE SET
+        The operation is done on all spectra of the sequence, each result is appended to the respective result list.
+
+        PARAMETERS:
+            starts : list of integers
+                -- starting channel of the analyzed peak
+            ends : list of integers
+                -- ending channel of the analyzed peak
+            sequence : list of lists of integers
+                -- all analyzed spectra
+            peaks : list of integers
+                -- list of channel numbers of the analyzed peak maximum
+        """
         self._results_alt = []
         for i in range(0, len(sequence)):
 
@@ -292,26 +425,46 @@ class PeakHeight(Result):
     """A subclass of Results representing peak heights.
 
     METHODS:
-        calculate_peak_heights(self)
-            -- takes the highest count value in peak to produce a list of heights
-        calculate_peak_heights_alt(self) !!! REQUIRES PEAK BOUNDARIES TO BE SET
-            -- same as above, but substracts background given by the line
-            -- between the amount of counts in start channel
-            -- and the amount of counts in end channel
+        calculate_heights(sequence, peaks)
+            -- saves the maximum counts of the peak to the result list
+        calculate_heights_alt(starts, ends, sequence, peaks) !!! REQUIRES PEAK BOUNDARIES TO BE SET
+            -- saves the maximum counts of the peak to the result list (with background subtracted)
     """
     def __init__(self):
         super().__init__()
 
     def calculate_heights(self, sequence, peaks):
-        """takes the highest count value in peak to produce a list of heights on specified sequence"""
+        """Saves the maximum counts of the peak to the result list.
 
+        The operation is done on all spectra of the sequence, each result is appended to the respective result list.
 
+        PARAMETERS:
+            sequence : list of lists of integers
+                -- all analyzed spectra
+            peaks : list of integers
+                -- list of channel numbers of the analyzed peak maximum
+        """
         self._results = []
         for index in range(len(sequence)):
             self._results.append(sequence[index][peaks[index]])
         print(self._results)
 
     def calculate_heights_alt(self, starts, ends, sequence, peaks):
+        """Saves the maximum counts (with background subtracted) of the peak to the result list.
+
+        !!! REQUIRES PEAK BOUNDARIES TO BE SET
+        The operation is done on all spectra of the sequence, each result is appended to the respective result list.
+
+        PARAMETERS:
+            starts : list of integers
+                -- starting channel of the analyzed peak
+            ends : list of integers
+                -- ending channel of the analyzed peak
+            sequence : list of lists of integers
+                -- all analyzed spectra
+            peaks : list of integers
+                -- list of channel numbers of the analyzed peak maximum
+        """
         for i in range(0, len(sequence)):
             x_difference = ends[i] - starts[i]
             y_difference = sequence[i][ends[i]] - \
@@ -330,23 +483,25 @@ class PeakArea(Result):
     """A subclass of Results representing peak areas.
 
     METHODS:
-        calculate_areas(self)
-            -- sums the
+        calculate_areas(starts, ends, sequence) !!! REQUIRES PEAK BOUNDARIES TO BE SET
+            -- sums the counts between boundaries with and without background subtraction
     """
     def __init__(self):
         super().__init__()
 
     def calculate_areas(self, starts, ends, sequence):
-        """Sums the counts in the specified range of channels
+        """Sums the counts between boundaries with and without background subtraction.
 
-         _results - in each spectrum and saves the list of results
+        !!! REQUIRES PEAK BOUNDARIES TO BE SET
+        The operation is done on all spectra of the sequence, each result is appended to the respective result list.
+
         PARAMETERS:
-            starts: list of integers
-                -- list of peak end positions selected in the analyzed sequence by user
+            starts : list of integers
+                -- starting channel of the analyzed peak
             ends : list of integers
-                -- list of peak end positions selected in the analyzed sequence by user
+                -- ending channel of the analyzed peak
             sequence : list of lists of integers
-                -- analyzed sequence of spectra
+                -- all analyzed spectra
         """
 
         self._results = []
@@ -364,15 +519,14 @@ class PeakArea(Result):
 
 
 class Export:
-    """A class containing export data
+    """Contains all result data in a matrix.
 
     ATTRIBUTES:
         unit : string
-            -- value depends on the state of calibration,
-            -- "channel" if calibration.tangent == 1 and calibration.offset == 0
-            -- "keV" otherwise
-        data : list of lists (of integers or floats)
-            -- a data sctructure used to
+            -- unit of centroids and fwhms
+        data : list of lists of floats/integers
+            -- contains list of spectrum numbers, list of times of acquisition.
+            -- additionally contains lists of all the result parameters
     """
     def __init__(self):
         self.unit = "channel"

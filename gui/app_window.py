@@ -24,10 +24,16 @@ class AppWindow(object):
             -- triggers evaluate_sequence(), spectrometric evaluation event
         button_export_results
             -- enabled by successful sequence evaluation
-            -- triggers export_to_txt(), export event
+            -- triggers export_results(), export event
         button_calibrate
-            -- enabled by picking more than one peak in a spectrum
-            -- triggers energy calibration
+            -- enabled by selecting more than one peak in a spectrum
+            -- triggers linear_calibration(), energy calibration event
+
+    SLIDERS:
+        slider_subset_size
+            -- determines the number of .mca files summed in one spectrum of the analyzed sequence
+        slider_subset_position
+            -- determines which spectrum of the analyzed sequence is displayed in the initial plot
 
     SPINBOXES:
         spinbox_peak_1
@@ -37,7 +43,7 @@ class AppWindow(object):
         spinbox_peak_4
         spinbox_peak_5
         spinbox_peak_6
-        spinboxes : list of spinboxes -- contains all of the listed spinboxes
+        spinbox : list of spinboxes -- contains all of the listed spinboxes
 
     LABELS:
         label_subset_size
@@ -70,6 +76,11 @@ class AppWindow(object):
         label_r_squared
         label_r_squared_value
 
+    FUNCTIONS:
+        setupUi(main_window) : void
+            -- performs the initialization of UI widgets
+        retranslateUi(main_window) : void
+            -- sets text values of buttons and labels
     """
     def setupUi(self, main_window):
         main_window.setObjectName("main_window")
