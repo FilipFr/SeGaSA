@@ -1,0 +1,102 @@
+gui.app_window module (SeGaSA ver. 1.0a)
+
+DESCRIPTION
+***********
+
+The main View component module of the SeGaSA system.
+
+CLASSES:
+
+    AppWindow
+        -- class containing GUI widgets of the main window
+
+CLASSES
+*******
+
+class AppWindow(object)
+    
+    A class containing GUI widgets of the main window.
+
+    This class represents the View component of the SeGaSA system.
+    Superclass of the EventController class.
+    Contains QtWidgets and event connections.
+    Majority of the class is converted from the Qt Designer .ui output file.
+    Widget variables naming format: type_name.
+
+    LIST OF WIDGETS
+
+    BUTTONS:
+
+        button_load_data
+            -- enabled by default
+            -- triggers load_data() .mca data import event
+        button_set_boundaries
+            -- enabled by picking a peak in a spectrum
+            -- triggers set_peak_boundaries(), manual peak selection event
+        button_show_results
+            -- enabled by picking a peak in a spectrum
+            -- triggers get_results(), spectrometric evaluation event
+        button_export_results
+            -- enabled by successful sequence evaluation
+            -- triggers export_results(), export event
+        button_calibrate
+            -- enabled by selecting more than one peak in a spectrum
+            -- triggers linear_calibration, energy calibration event
+
+    SLIDERS:
+
+        slider_subset_size
+            -- determines the number of .mca files summed in one spectrum of the analyzed sequence
+        slider_subset_position
+            -- determines which spectrum of the analyzed sequence is displayed in the initial plot
+
+    SPINBOXES:
+
+        spinbox_peak_1
+            -- input field for calibration specification (same goes for the other spinboxes)
+        spinbox_peak_2
+        spinbox_peak_3
+        spinbox_peak_4
+        spinbox_peak_5
+        spinbox_peak_6
+        spinbox : list of spinboxes 
+            -- contains all of the listed spinboxes
+
+    LABELS:
+
+        label_subset_size
+        label_subset_size_text
+        label_subset_position
+        label_subset_position_text
+        label_set_size_text
+        label_set_size
+        label_calibration_header
+        label_peak_1
+        label_centroid_1
+        label_kev_1
+        label_peak_2
+        label_centroid_2
+        label_kev_2
+        label_peak_3
+        label_centroid_3
+        label_kev_3
+        label_peak_4
+        label_centroid_4
+        label_kev_4
+        label_peak_5
+        label_centroid_5
+        label_kev_5
+        label_peak_6
+        label_centroid_6
+        label_kev_6
+        label_calibration_function
+        label_calibration_function_value
+        label_r_squared
+        label_r_squared_value
+
+    LIST OF FUNCTIONS:
+
+        setupUi(main_window) : void
+            -- performs the initialization of UI widgets.
+        retranslateUi(main_window) : void
+            -- sets text values of buttons and labels

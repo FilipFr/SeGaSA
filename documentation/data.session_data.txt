@@ -1,0 +1,317 @@
+data.session_data module (SeGaSA ver. 1.0a)
+
+DESCRIPTION
+***********
+
+The main Model component module of the SeGaSA system.
+
+Contains data classes.
+
+CLASSES:
+
+    SessionData
+        -- data on the current state of the application session.
+    Peak
+        -- data on peaks found and selected in the currently analyzed sequence
+    Calibration
+        -- calibration data
+    Sequence
+        -- data on the currently analyzed sequence
+    MCAData
+        -- data parsed from loaded files
+    Result 
+        -- stores results of the spectra evaluation
+    PeakCentroid
+        -- peak centroid evaluation result data
+    FWHM
+        -- fwhm evaluation result data
+    PeakHeight
+        -- peak height evaluation result data
+    PeakArea
+        -- peak area evaluation result data
+    Export
+        -- result data intended to be exported 
+
+CLASSES
+*******
+
+class SessionData
+
+    A class storing the current state of the application.
+
+    Contains instances of data classes.
+    This class represents the Model component of the SeGaSA system.
+    Instances are maintained for the duration of a single application session.
+    Check docstrings of respective data classes for their specification.
+
+    ATTRIBUTES:
+
+        loaded_data : MCAData()
+        sequence : Sequence()
+        peaks : Peak()
+        calibration : Calibration()
+        fwhms : FWHM()
+        centroids : PeakCentroid()
+        heights : PeakHeight()
+        areas : PeakArea()
+
+    METHODS:
+
+        reset() : void
+
+            Resets the application to it's partially uninitialized state.
+
+            Loaded data remains unaffected.
+
+class Peak
+
+    A class storing the data of peaks found and selected in the currently analyzed sequence.
+
+    ATTRIBUTES:
+
+        found : list of integers
+            -- peaks found in the current spectrum using SciPy function find_peaks()
+        selected : list of floats
+            -- peaks selected by the user
+        prominence : integer
+            -- current level of prominence, identical to the spectrum size (possible redundancy?)
+        boundaries : list of lists of floats
+            -- currently selected peak boundaries
+        starts : list of integers
+            -- starting channels of the currently selected peak for the whole sequence
+        ends : list of integers
+            -- ending channels of the currently selected peak for the whole sequence
+
+    METHODS:
+
+        boundaries_to_int() : void
+            
+		Converts the list of floats representing peak boundaries into two lists of integers.
+
+class Calibration
+
+    Contains calibration data.
+
+    ATTRIBUTES:
+
+        tangent : float
+        offset : float
+        r_squared : float (on the interval [0-1])
+            -- coefficient of determination
+
+class Sequence
+    
+    Contains data of the currently analyzed sequence.
+
+    ATTRIBUTES:
+
+        subset_size : integer
+            -- number of summed .mca files in one spectrum of the sequence
+        current_position : integer
+            -- index of the currently displayed spectrum of the sequence (indexing from 1)
+        spectra : list of lists of integers
+            -- all spectra of the sequence
+        length : integer
+            -- number of spectra in the analyzed sequence
+        peaks : list of integers
+            -- list of channel numbers of the analyzed peak maximum
+        spectrum : list of integers
+            -- currently selected spectrum
+    
+class MCAData
+
+    A class to contain and manage the imported data from .mca files.
+
+    ATTRIBUTES:
+
+        _file_count: integer
+            -- number of loaded .mca files
+        _spectra : list of lists
+            -- contains the spectra (spectrum : list of integers) imported from .mca files
+        _time : integer
+            -- the duration of a single spectrum acquisition
+
+    METHODS:
+
+        parse_data_from_mca(filepath) : void
+            
+            Parses data from a single .mca file.
+
+            PARAMETERS:
+            filepath : string
+       
+
+        get_data_from_directory(directory_path) : int (0 success, -1 failiure)
+
+            Calls parse_data_from_mca on each file in the directory.
+
+            PARAMETERS:
+                directory_path : string
+
+            RETURNS:
+                integer (0 on success, -1 on failiure)
+
+class Result
+
+    A data class representing spectra evaluation results.
+
+    This class is intended to be subclassed by classes of specific spectrometric parameters.
+
+    ATTRIBUTES:
+
+        _results : list of integers / list of floats
+            -- contains evaluation of a specific spectrometric parameter for all loaded spectra
+        _results_alt : list of integers / list of floats
+            -- contains alternative evaluation of a specific parameter for all loaded spectra
+
+    METHODS:
+
+        create_ndarrays() : ndarray, ndarray (see NumPy type ndarray)
+ 
+	    Returns NumPy arrays made from results.
+
+            RETURNS:
+                ndarray, ndarray
+        
+class PeakCentroid(Result)
+
+    A subclass of Results representing peak centroids.
+
+    METHODS:
+
+        calculate_centroids()
+
+	    Uses five-channel method to evaluate current spectra and produces a list of centroids.
+
+            The operation is done on all spectra of the sequence, each result is appended to the respective result list.
+
+            PARAMETERS:
+                sequence : list of lists of integers
+                    -- all analyzed spectra
+                peaks : list of integers
+                    -- list of channel numbers of the analyzed peak maximum
+       
+        calculate_centroids_alt()
+        
+	    Uses gaussian fitting on top of the peak of interest to produce a list of centroids.
+
+	    The operation is done on all spectra of the sequence, each result is appended to the respective result list.
+
+	    PARAMETERS:
+        	sequence : list of lists of integers
+              	    -- all analyzed spectra
+            	peaks : list of integers
+                    -- list of channel numbers of the analyzed peak maximum
+
+class FWHM(Result)
+
+    A subclass of Results representing peak FWHMs (Full Width at Half Maximum).
+
+    METHODS:
+
+        calculate_fwhms()
+
+            Uses analytic interpolation without background subtraction to produce a list of fwhms.
+
+            The operation is done on all spectra of the sequence, each result is appended to the respective result list.
+
+            PARAMETERS:
+                sequence : list of lists of integers
+                    -- all analyzed spectra
+                peaks : list of integers
+                    -- list of channel numbers of the analyzed peak maximum
+
+        calculate_fwhms_alt() 
+                    
+	    Uses analytic interpolation with background subtraction to produce a list of fwhms.
+
+            !!! REQUIRES PEAK BOUNDARIES TO BE SET
+            The operation is done on all spectra of the sequence, each result is appended to the respective result list.
+
+            PARAMETERS:
+                starts : list of integers
+                    -- starting channel of the analyzed peak
+                ends : list of integers
+                    -- ending channel of the analyzed peak
+                sequence : list of lists of integers
+                    -- all analyzed spectra
+                peaks : list of integers
+                    -- list of channel numbers of the analyzed peak maximum
+
+class PeakHeight(Result)
+
+    A subclass of Results representing peak heights.
+
+    METHODS:
+
+        calculate_heights(sequence, peaks)
+
+	    Saves the maximum counts of the peak to the result list.
+
+            The operation is done on all spectra of the sequence, each result is appended to the respective result list.
+
+            PARAMETERS:
+                sequence : list of lists of integers
+                    -- all analyzed spectra
+                peaks : list of integers
+                    -- list of channel numbers of the analyzed peak maximum
+
+        calculate_heights_alt(starts, ends, sequence, peaks)
+
+            Saves the maximum counts (with background subtracted) of the peak to the result list.
+
+            !!! REQUIRES PEAK BOUNDARIES TO BE SET
+            The operation is done on all spectra of the sequence, each result is appended to the respective result list.
+
+            PARAMETERS:
+                starts : list of integers
+                    -- starting channel of the analyzed peak
+                ends : list of integers
+                    -- ending channel of the analyzed peak
+                sequence : list of lists of integers
+                    -- all analyzed spectra
+                peaks : list of integers
+                    -- list of channel numbers of the analyzed peak maximum
+        
+class PeakArea(Result)
+
+    A subclass of Results representing peak areas.
+
+    METHODS:
+        calculate_areas(starts, ends, sequence) !!! REQUIRES PEAK BOUNDARIES TO BE SET
+            Sums the counts between boundaries with and without background subtraction.
+
+            !!! REQUIRES PEAK BOUNDARIES TO BE SET
+            The operation is done on all spectra of the sequence, each result is appended to the respective result list.
+
+            PARAMETERS:
+                starts : list of integers
+                    -- starting channel of the analyzed peak
+                ends : list of integers
+                    -- ending channel of the analyzed peak
+                sequence : list of lists of integers
+                    -- all analyzed spectra
+        
+class Export
+    
+    Contains all result data in a matrix.
+
+    ATTRIBUTES:
+
+        unit : string
+            -- unit of centroids and fwhms
+        data : list of lists of floats/integers
+            -- contains list of spectrum numbers, list of times of acquisition.
+            -- additionally contains lists of all the result parameters
+   
+    
+
+
+    
+    
+   
+    
+	
+
+
+	

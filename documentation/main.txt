@@ -1,0 +1,19 @@
+main module (SeGaSA ver. 1.0a)
+
+DESCRIPTION
+***********
+
+The main module of the SeGaSA system.
+
+SeGaSA is a software for sequential gamma spectra analysis developed at STU as a part of the bachelor's thesis
+"Software design for automation of the spectra processing for a semiconductor detector with polarization effect".
+For instructions on how to use the software refer to the user manual at https://github.com/FilipFr/SeGaSA.
+
+Running this module starts the SeGaSA application.
+
+FUNCTIONS
+*********
+
+start_application()
+
+    Sets up the GUI and starts the application
