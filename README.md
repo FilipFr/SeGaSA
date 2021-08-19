@@ -2,7 +2,7 @@
 
 SeGaSA  (Sequential  Gamma  Spectra  Analysis)  is  a  software  complementing  the  Windows 
 application DPPMCA from Amptek used for radiation spectra acquisition and analysis. SeGaSA 
-analyzes  sets  of  .mca  output  files  and  displays  the  time dependence of basic spectrometric parameters of a CdTe semiconductor detector.
+analyzes  sets  of  .mca  output  files  and  produces plots showing  the  time dependence of basic spectrometric parameters of a CdTe semiconductor detector.
 
 Please read the SeGaSA user manual for information on how to run and use the software. If github renders the pdf incorrectly (e.g. missing pages), download the file and open it locally.
 
